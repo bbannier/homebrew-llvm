@@ -2,18 +2,18 @@ class LlvmMesos < Formula
   desc "Mesos-specific LLVM tools (`clang-format` and `clang-tidy`)"
 
   head do
-    url "http://llvm.org/git/llvm.git", :branch => "release_38"
+    url "http://llvm.org/git/llvm.git", :branch => "release_50"
 
     resource "clang" do
-      url "https://github.com/mesos/clang.git", :branch => "mesos_38"
+      url "https://github.com/mesos/clang.git", :branch => "mesos_50"
     end
 
     resource "clang-tools-extra" do
-      url "https://github.com/mesos/clang-tools-extra.git", :branch => "mesos_38"
+      url "https://github.com/mesos/clang-tools-extra.git", :branch => "mesos_50"
     end
 
     resource "libcxx" do
-      url "http://llvm.org/git/libcxx.git", :branch => "release_38"
+      url "http://llvm.org/git/libcxx.git", :branch => "release_50"
     end
   end
 
@@ -47,7 +47,7 @@ class LlvmMesos < Formula
       -DLLVM_BUILD_LLVM_DYLIB=On
     ]
 
-    args  << "-DCMAKE_INSTALL_PREFIX=#{install_prefix}"
+    args << "-DCMAKE_INSTALL_PREFIX=#{install_prefix}"
 
     if build.universal?
       ENV.permit_arch_flags
@@ -65,20 +65,21 @@ class LlvmMesos < Formula
     end
 
     Dir.glob(install_prefix/"share/clang/*") do |script|
-      basename = File.basename(script, ".*")
-      extname = File.extname(script)
-      case extname
-      when ".py"
-        if basename.include? "clang-format"
-          inreplace script, "binary = 'clang-format'", "binary = 'clang-format-#{ver}'"
-        elsif basename.include? "clang-tidy"
-          inreplace script, "default='clang-tidy'", "default='clang-tidy-#{ver}'"
-        end
-      when ".el"
+      case File.basename(script)
+      when "clang-format-diff.py"
+        inreplace script, "default='clang-format'", "default='clang-format-#{ver}'"
+      when "clang-format-sublime.py"
+        inreplace script, "binary = 'clang-format'", "binary = 'clang-format-#{ver}'"
+      when "clang-tidy.py", "run-clang-tidy.py", "clang-tidy-diff.py"
+        inreplace script, "default='clang-tidy'", "default='clang-tidy-#{ver}'"
+      when "clang-format.el"
         inreplace script, "executable-find \"clang-format\"", "executable-find \"clang-format-#{ver}\""
-      when ".applescript"
+      when "clang-format-bbedit.applescript"
         inreplace script, "path/to/clang-format", "path/to/clang-format-#{ver}"
       end
+
+      basename = File.basename(script, ".*")
+      extname = File.extname(script)
       (share/"clang-#{ver}").install_symlink script => "#{basename}-#{ver}#{extname}"
     end
   end
